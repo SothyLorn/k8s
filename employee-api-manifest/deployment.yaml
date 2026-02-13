@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name:  employee-api
+  namespace: employee
+  labels:
+    app: employee-api
+spec:
+  selector:
+    matchLabels:
+      app: employee-api
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app:  employee-api
+    spec:
+      containers:
+      - name: employee-api
+        image: sothy/employee-api:uat-6
+        resources:
+            requests:
+              cpu: "500m"
+              memory: "500Mi"
+            limits:
+              cpu: "1"
+              memory: "2Gi"
+        ports:
+        - containerPort: 4000
+          name:  employee-api
+      #  volumeMounts:
+      #    - name: demo-pv
+      #      mountPath: /app/Photos
+      #volumes:
+      #  - name: demo-pv
+      #    persistentVolumeClaim:
+      #      claimName: nfs-pvc
+      restartPolicy: Always

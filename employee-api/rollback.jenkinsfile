@@ -1,0 +1,45 @@
+pipeline{
+    agent any
+    environment {
+        APP_ENV="uat"
+        DOCKER_HUB_PASSWORD=credentials('docker_hub_password')
+        Telegram_Token=credentials('Telegram_Token')
+        Telegram_ChatID=credentials('Telegram_ChatID')
+        project_name="employee-api"
+        app_url="http://178.128.117.69:4000"
+    }
+    parameters {
+         string(name: 'Version', defaultValue: '', description: 'Please enter docker images version that you want to rollback')
+    }
+    stages{
+        
+        stage("Rollback UAT Server"){
+            steps{
+                script {
+                    sh """
+                        ssh root@178.128.117.69 "docker rm -f ${project_name}; docker run -d --name ${project_name} -p 4000:4000 --restart always sothy/${project_name}:${Version}"
+                    """
+                }
+            }
+            
+        }
+    }
+    post{
+        always{
+            script{
+					sh """
+						curl -s -X POST https://api.telegram.org/bot$Telegram_Token/sendMessage \
+											-d chat_id=${Telegram_ChatID} \
+											-d parse_mode="HTML" \
+											-d disable_web_page_preview=true \
+											-d text="<b>Stage</b>: Rollback ${project_name} \
+											%0A<b>Status</b>: ${currentBuild.currentResult} \
+											%0A<b>Rollback to Version</b>: ${Version} \
+											%0A<b>Environment</b>: ${APP_ENV} \
+											%0A<b>Application URL</b>: ${app_url} \
+											%0A<b>User Build</b>: ${BUILD_USER}" 
+					"""
+			}
+        }
+    }
+}

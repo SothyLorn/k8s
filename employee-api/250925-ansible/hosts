@@ -1,0 +1,6 @@
+localhost ansible_connection=local
+
+[uat-app]
+employee-api-uat ansible_host=139.59.247.219 ansible_user=root
+[prod-app]
+employee-api-prod ansible_host=167.172.73.30 ansible_user=root

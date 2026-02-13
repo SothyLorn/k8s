@@ -1,0 +1,5 @@
+localhost ansible_connection=local
+
+employee-api-dev ansible_host=68.183.184.188 ansible_ssh_user=root 
+employee-api-uat ansible_host=68.183.184.188 ansible_ssh_user=root 
+employee-api-prod ansible_host=68.183.184.188 ansible_ssh_user=root 

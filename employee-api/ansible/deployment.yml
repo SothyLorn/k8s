@@ -1,0 +1,21 @@
+---
+- hosts: all
+  gather_facts: no
+  tasks:
+    - name: Log into DockerHub
+      docker_login:
+        registry: "{{ registry_url }}"
+        username: "{{ registry_username }}"
+        password: "{{ registry_password }}"
+    - name: deploy application
+      community.docker.docker_compose_v2:
+        project_name: "{{ project_name }}"
+        definition:
+          version: '2'
+          services:
+            api:
+              container_name: "{{ project_name }}"
+              image: "{{ registry_repo }}:{{ version }}"
+              restart: always
+              ports:
+                - "4000:4000"

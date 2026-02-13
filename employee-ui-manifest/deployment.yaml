@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name:  employee-ui
+  namespace: employee
+  labels:
+    app:  employee-ui
+spec:
+  selector:
+    matchLabels:
+      app: employee-ui
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app:  employee-ui
+    spec:
+      containers:
+      - name: employee-ui
+        image: sothy/employee-ui:sothy-site
+        # resources:
+        #   requests:
+        #     cpu: "500m"
+        #     memory: "500Mi"
+        #   limits:
+        #     cpu: "1"
+        #     memory: "1Gi"
+        ports:
+        - containerPort: 4200
+          name:  employee-ui
+      restartPolicy: Always

@@ -1,0 +1,28 @@
+---
+- hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: send a message to chat in playbook
+      community.general.telegram:
+        token: "{{ Telegram_Token }}"
+        api_args:
+          chat_id: "{{ Telegram_ChatID }}"
+          parse_mode: "html"
+          text: "Start to deploy project {{ project_name }} on branch {{git_branch}} on environment {{app_env}} with url {{ git_repo_url }} by {{BUILD_USER}}."
+          disable_web_page_preview: True
+    - name: Log into DockerHub
+      docker_login:
+        registry: "{{ registry_url }}"
+        username: "{{ registry_username }}"
+        password: "{{ registry_password }}"
+    - name: Build an image and push it to a private repo
+      community.docker.docker_image:
+        build:
+          path: "{{ workspace }}"
+        name: "{{ registry_repo }}"
+        push: true
+        source: build
+        force_tag: yes
+        force_source: yes
+        repository: "{{ registry_repo }}:{{ version }}"
+        tag: "{{ version }}"

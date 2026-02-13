@@ -1,0 +1,72 @@
+pipeline{
+    agent any
+    environment {
+        Telegram_Token=credentials('Telegram_Token')
+        Telegram_ChatID=credentials('Telegram_ChatID')
+        registry_url = "sothy/employee-api"
+        registry_username="sothy"
+        registry_password=credentials('docker_hub_password')
+        app_env = "uat"
+        project_name="employee-api"
+    }
+    // parameters {
+    //     string(name: 'PERSON', defaultValue: 'Mr Jenkins', description: 'Who should I say hello to?')
+    //     text(name: 'Release_Note', defaultValue: '', description: 'Enter Release_Note')
+    //     booleanParam(name: 'TOGGLE', defaultValue: true, description: 'Toggle this value')
+    //     choice(name: 'app_env', choices: ['dev', 'uat', 'prod'], description: 'Appication ENV')
+    //     password(name: 'PASSWORD', defaultValue: 'SECRET', description: 'Enter a password')
+    // }
+    stages{
+        stage("build docker images"){
+            steps{
+                script {
+                    sh """
+                        docker build . -t ${registry_url}:${app_env}-${BUILD_NUMBER}
+                    """
+                }
+            }
+        }
+        stage("push docker images"){
+            steps{
+                script {
+                    sh """
+                        docker login -u ${registry_username} -p ${registry_password}
+                        docker push ${registry_url}:${app_env}-${BUILD_NUMBER}
+                    """
+                }
+            }
+        }
+        stage("deployment to uat"){
+            steps{
+               script {
+                    sh """
+                        ssh root@159.223.70.9 \
+                        "docker rm -f ${project_name}; \
+                        docker run -d --name ${project_name} \
+                        -p 4000:4000 --restart always \
+                        ${registry_url}:${app_env}-${BUILD_NUMBER}"
+                    """
+                }
+            }
+        }
+    }
+    // post{
+    //     always{
+    //         script{
+	// 				sh """
+	// 					curl -s -X POST https://api.telegram.org/bot$Telegram_Token/sendMessage \
+	// 										-d chat_id=${Telegram_ChatID} \
+	// 										-d parse_mode="HTML" \
+	// 										-d disable_web_page_preview=true \
+	// 										-d text="<b>Stage</b>: Deploy ${project_name} \
+	// 										%0A<b>Status</b>: ${currentBuild.currentResult} \
+	// 										%0A<b>Version</b>: ${app_env}-${BUILD_NUMBER} \
+	// 										%0A<b>Environment</b>: ${app_env} \
+	// 										%0A<b>Application URL</b>: ${app_url} \
+    //                                         %0A<b>Release Note</b>: ${Release_Note} \
+	// 										%0A<b>User Build</b>: ${BUILD_USER}" 
+	// 				"""
+	// 		}
+    //     }
+    // }
+}

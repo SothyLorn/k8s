@@ -1,0 +1,84 @@
+pipeline{
+    agent any
+    environment {
+        Telegram_Token=credentials('Telegram_Token')
+        Telegram_ChatID=credentials('Telegram_ChatID')
+        registry_url = "registry.digitalocean.com"
+        registry_repo ="registry.digitalocean.com/docker-demo/employee-api"
+        registry_username=credentials('DO_TOKEN')
+        registry_password=credentials('DO_TOKEN')
+        app_url="http://68.183.184.188:4000"
+        project_name="employee-api"
+        git_repo_url="https://gitlab.com/mpwt-cambodia/employee-api.git"
+    }
+    parameters {
+        string(name: 'PERSON', defaultValue: 'Mr Jenkins', description: 'Who should I say hello to?')
+        text(name: 'Release_Note', defaultValue: '', description: 'Enter Release_Note')
+        booleanParam(name: 'TOGGLE', defaultValue: true, description: 'Toggle this value')
+        choice(name: 'app_env', choices: ['dev', 'uat', 'prod'], description: 'Appication ENV')
+        password(name: 'PASSWORD', defaultValue: 'SECRET', description: 'Enter a password')
+    }
+    stages{
+        stage("build & push docker images"){
+            steps{
+                script {
+                    sh """
+                        ansible-playbook ansible/docker-build.yml -i ansible/hosts \
+                                         -e registry_url=${registry_url} \
+                                         -e registry_username=${registry_username} \
+                                         -e registry_password=${registry_password} \
+                                         -e workspace=${WORKSPACE} \
+                                         -e registry_repo=${registry_repo} \
+                                         -e version=${app_env}-${BUILD_NUMBER} \
+                                         -e git_repo_url=${git_repo_url} \
+                                         -e git_branch="jenkins" \
+                                         -e Telegram_Token=${Telegram_Token} \
+                                         -e Telegram_ChatID=${Telegram_ChatID} \
+                                         -e BUILD_USER=${BUILD_USER} \
+                                         -e project_name=${project_name} \
+                                         -e app_env=${app_env}
+
+
+
+
+                    """
+                }
+            }
+        }
+        stage("deployment to uat"){
+            steps{
+               script {
+                    sh """
+                        ansible-playbook ansible/deployment.yml -i ansible/hosts \
+                                         -l ${project_name}-${app_env} \
+                                         -e registry_url=${registry_url} \
+                                         -e registry_username=${registry_username} \
+                                         -e registry_password=${registry_password} \
+                                         -e registry_repo=${registry_repo} \
+                                         -e project_name=${project_name} \
+                                         -e version=${app_env}-${BUILD_NUMBER}
+                    """
+                }
+            }
+        }
+    }
+    post{
+        always{
+            script{
+					sh """
+						curl -s -X POST https://api.telegram.org/bot$Telegram_Token/sendMessage \
+											-d chat_id=${Telegram_ChatID} \
+											-d parse_mode="HTML" \
+											-d disable_web_page_preview=true \
+											-d text="<b>Stage</b>: Deploy ${project_name} \
+											%0A<b>Status</b>: ${currentBuild.currentResult} \
+											%0A<b>Version</b>: ${app_env}-${BUILD_NUMBER} \
+											%0A<b>Environment</b>: ${app_env} \
+											%0A<b>Application URL</b>: ${app_url} \
+                                            %0A<b>Release Note</b>: ${Release_Note} \
+											%0A<b>User Build</b>: ${BUILD_USER}" 
+					"""
+			}
+        }
+    }
+}

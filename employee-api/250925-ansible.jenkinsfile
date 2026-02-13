@@ -1,0 +1,104 @@
+pipeline{
+    agent any
+    environment {
+        APP_ENV="uat"
+        DOCKER_HUB_PASSWORD=credentials('docker_hub_password')
+        DOCKER_HUB_USER="sothy"
+        Telegram_Token=credentials('Telegram_Token')
+        Telegram_ChatID=credentials('Telegram_ChatID')
+        project_name="employee-api"
+        app_url="http://178.128.117.69:4000"
+        git_repo="https://gitlab.com/mpwt-cambodia/employee-api.git"
+        registry_url="sothy/employee-api"
+
+    }
+    stages{
+        stage("Configure"){
+            steps{
+                script {
+                    sh """
+                        ansible-playbook 250925-ansible/configure.yml \
+                                        -i 250925-ansible/hosts \
+                                        -e Telegram_Token=${Telegram_Token} \
+                                        -e Telegram_ChatID=${Telegram_ChatID} \
+                                        -e project_name=${project_name} \
+                                        -e git_branch="jenkins" \
+                                        -e app_env=${APP_ENV} \
+                                        -e git_repo=${git_repo} \
+                                        -e build_user=${BUILD_USER}
+
+                    """
+                }
+            }
+            
+        }
+        stage("Docker Build & Push"){
+            steps{
+                script {
+                    sh """
+                        ansible-playbook 250925-ansible/docker-build.yml \
+                                        -i 250925-ansible/hosts \
+                                        -e registry_username=${DOCKER_HUB_USER} \
+                                        -e registry_password=${DOCKER_HUB_PASSWORD} \
+                                        -e workspace=${WORKSPACE} \
+                                        -e registry_url=${registry_url} \
+                                        -e version=${APP_ENV}-${BUILD_NUMBER}
+                    """
+                }
+            }
+            
+        }
+        stage("Deploy UAT Application"){
+            steps{
+                script {
+                    sh """
+                        ansible-playbook 250925-ansible/deployment.yml \
+                                        -i 250925-ansible/hosts \
+                                        -l employee-api-uat \
+                                        -e registry_username=${DOCKER_HUB_USER} \
+                                        -e registry_password=${DOCKER_HUB_PASSWORD} \
+                                        -e project_name=${project_name} \
+                                        -e registry_url=${registry_url} \
+                                        -e version=${APP_ENV}-${BUILD_NUMBER}
+                    """
+                }
+            }
+            
+        }
+        stage("Deploy Production Application"){
+            steps{
+                script {
+                    sh """
+                        ansible-playbook 250925-ansible/deployment.yml \
+                                        -i 250925-ansible/hosts \
+                                        -l employee-api-prod \
+                                        -e registry_username=${DOCKER_HUB_USER} \
+                                        -e registry_password=${DOCKER_HUB_PASSWORD} \
+                                        -e project_name=${project_name} \
+                                        -e registry_url=${registry_url} \
+                                        -e version=${APP_ENV}-${BUILD_NUMBER}
+                    """
+                }
+            }
+            
+        }
+    }
+    post{
+        always{
+            script{
+					sh """
+						curl -s -X POST https://api.telegram.org/bot$Telegram_Token/sendMessage \
+											-d chat_id=${Telegram_ChatID} \
+											-d parse_mode="HTML" \
+											-d disable_web_page_preview=true \
+											-d text="<b>Stage</b>: Deploy ${project_name} \
+											%0A<b>Status</b>: ${currentBuild.currentResult} \
+											%0A<b>Version</b>: ${APP_ENV}-${BUILD_NUMBER} \
+											%0A<b>Environment</b>: ${APP_ENV} \
+											%0A<b>Application URL</b>: ${app_url} \
+											%0A<b>User Build</b>: ${BUILD_USER}" 
+					"""
+			}
+        }
+    }
+}

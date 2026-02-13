@@ -1,0 +1,11 @@
+---
+- hosts: localhost
+  tasks:
+    - name: send a message to chat in playbook
+      community.general.telegram:
+        token: "{{ Telegram_Token }}"
+        api_args:
+          chat_id: "{{ Telegram_ChatID }}"
+          parse_mode: "html"
+          text: "Start to deploy project {{project_name }} on branch {{ git_branch }} on environment {{ app_env }} with url {{ git_repo }} by {{ build_user }}."
+          disable_web_page_preview: True
