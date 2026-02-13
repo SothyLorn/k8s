@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: taskmate
+  namespace: taskmate
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: taskmate
+  template:
+    metadata:
+      labels:
+        app: taskmate
+    spec:
+      containers:
+      - name: taskmate
+        image: sothy/taskmate:postgresql-db
+        envFrom: 
+          - configMapRef:
+              name: taskmate-configmap
+          - secretRef:
+              name: taskmate-secret
+        resources:
+          requests:
+            memory: "500Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        ports:
+        - containerPort: 8000

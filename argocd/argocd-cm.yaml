@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-cm
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-cm
+    app.kubernetes.io/part-of: argocd
+data:
+  # Add local users
+  accounts.sothy: apiKey, login
+  accounts.dara: apiKey, login
+  
+  # Optional: Set password expiration (in days)
+  accounts.sothy.enabled: "true"
+  accounts.dara.enabled: "true"

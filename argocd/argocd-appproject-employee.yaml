@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: employee
+  namespace: argocd
+spec:
+  description: Employee namespace project
+  
+  # Allow deployment to employee namespace only
+  destinations:
+    - namespace: employee
+      server: https://kubernetes.default.svc
+  
+  # Source repositories (adjust to your repos)
+  sourceRepos:
+    - '*'
+  
+  # Cluster resource whitelist
+  clusterResourceWhitelist:
+    - group: ''
+      kind: Namespace
+  
+  # Namespace resource whitelist - allow all resources in the namespace
+  namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'

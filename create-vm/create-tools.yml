@@ -1,0 +1,28 @@
+---
+- hosts: localhost
+  tasks:
+    - name: Ensure a SSH key is present
+      community.digitalocean.digital_ocean:
+        state: present
+        command: ssh
+        name: sothy
+        api_token: 
+      register: my_ssh
+    - name: Create a new Droplet
+      community.digitalocean.digital_ocean_droplet:
+        state: present
+        ssh_keys: ['{{ my_ssh.ssh_key.id }}']
+        name: "{{ item }}"
+        unique_name: "true"
+        oauth_token: 
+        size: s-4vcpu-8gb
+        region: sgp1
+        image: ubuntu-24-04-x64
+        #image: docker-20-04
+        wait_timeout: 500
+      loop:
+        - k8s-haproxy
+        - k8s-jumphost
+      
+
+    

@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: taskmate
+  namespace: argocd
+spec:
+  description: Taskmate namespace project
+  
+  # Allow deployment to taskmate namespace only
+  destinations:
+    - namespace: taskmate
+      server: https://kubernetes.default.svc
+  
+  # Source repositories (adjust to your repos)
+  sourceRepos:
+    - '*'
+  
+  # Cluster resource whitelist
+  clusterResourceWhitelist:
+    - group: ''
+      kind: Namespace
+  
+  # Namespace resource whitelist - allow all resources in the namespace
+  namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'

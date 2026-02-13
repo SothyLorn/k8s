@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-rbac-cm
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-rbac-cm
+    app.kubernetes.io/part-of: argocd
+data:
+  # Default policy: deny all
+  policy.default: role:''
+  
+  # RBAC Policy
+  policy.csv: |
+    # Policy for user 'sothy' - can only access employee project
+    p, role:employee-admin, applications, *, employee/*, allow
+    p, role:employee-admin, applications, get, employee/*, allow
+    p, role:employee-admin, applications, sync, employee/*, allow
+    p, role:employee-admin, applications, override, employee/*, allow
+    p, role:employee-admin, applications, delete, employee/*, allow
+    p, role:employee-admin, repositories, get, *, allow
+    p, role:employee-admin, repositories, list, *, allow
+    p, role:employee-admin, clusters, get, *, allow
+    p, role:employee-admin, projects, get, employee, allow
+    g, sothy, role:employee-admin
+    
+    # Policy for user 'dara' - can only access taskmate project
+    p, role:taskmate-admin, applications, *, taskmate/*, allow
+    p, role:taskmate-admin, applications, get, taskmate/*, allow
+    p, role:taskmate-admin, applications, sync, taskmate/*, allow
+    p, role:taskmate-admin, applications, override, taskmate/*, allow
+    p, role:taskmate-admin, applications, delete, taskmate/*, allow
+    p, role:taskmate-admin, repositories, get, *, allow
+    p, role:taskmate-admin, repositories, list, *, allow
+    p, role:taskmate-admin, clusters, get, *, allow
+    p, role:taskmate-admin, projects, get, taskmate, allow
+    g, dara, role:taskmate-admin
+    
+    # Deny access to other projects explicitly
+    p, role:employee-admin, applications, *, taskmate/*, deny
+    p, role:taskmate-admin, applications, *, employee/*, deny
